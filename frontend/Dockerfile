@@ -11,29 +11,24 @@ RUN npm install
 # Copy the rest of the source code
 COPY . .
 
-
 # 1. Catch the arguments passed from docker-compose.yml
-ARG VITE_API_URL
+ARG VITE_GATEWAY_URL
 ARG VITE_GOOGLE_CLIENT_ID
 
-# 2. Assign them to environmental variables so Vite reads them
-ENV VITE_API_URL=$VITE_API_URL
+# 2. Assign them to environment variables so Vite reads them during build
+ENV VITE_GATEWAY_URL=$VITE_GATEWAY_URL
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 
 # Run the build command (generates the /dist folder)
 RUN npm run build
 
-# STAGE 2: The "Delivery" Stage
-# We use 'scratch' or 'alpine' because we don't need Node anymore.
-# We just need a way to hold the files for the shared volume.
+# STAGE 2: Delivery Stage
 FROM alpine:latest
 
-# Create the directory where the volume is mounted
-WORKDIR /app/dist
+WORKDIR /app/dist_build
 
-# Copy the build output from the first stage
+# Copy the build output from stage 1 into image storage
 COPY --from=builder /app/dist .
 
-# This container doesn't need to stay running. 
-# Once it copies files to the volume, it can exit.
-CMD ["echo", "Frontend build complete. Files are in the shared volume."]
+# Force-sync fresh dist files into the mounted volume on startup
+CMD ["sh", "-c", "cp -rf /app/dist_build/* /app/dist/ && echo 'Frontend build synced to volume.'"]

@@ -1,6 +1,10 @@
 import { createContext, useState, useEffect } from "react";
 
-export const UserContext = createContext(null);
+export const UserContext = createContext({
+  user: null,
+  setUser: () => {},
+  logout: () => {},
+});
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -26,7 +30,6 @@ export const UserProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
-    // You can also add a redirect to "/" here if needed
   };
 
   return (

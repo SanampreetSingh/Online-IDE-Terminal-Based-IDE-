@@ -1,8 +1,26 @@
 @import "tailwindcss";
 
 html, body, #root {
+  width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #1e1e1e; /* Match your IDE background to prevent white flashes */
+  overflow: hidden;
+  background-color: #020617;
+}
+
+/* Custom sleek scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }

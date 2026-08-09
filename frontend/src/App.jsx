@@ -1,51 +1,61 @@
-import React, { useContext } from 'react';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import AuthPage from './pages/AuthPage';
 import IDEWorkspace from './components/IDEWorkspace';
-import { LoginApi } from "./api/auth.jsx";
-import { UserContext } from "./context/UserContext.jsx";
+import { fetchMe } from './api/authApi';
+import { setCredentials, setLoading } from './store/slices/authSlice';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-cyan-400 font-mono">
+        ⚡ Loading Cloud IDE Session...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return children;
+}
 
 function App() {
-  const { user, setUser } = useContext(UserContext);
+  const dispatch = useDispatch();
 
-  const onSuccess = async (response) => {
-    try {
-      // 'credential' is the JWT returned by Google
-      const { credential } = response;
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetchMe();
+        if (res.user) {
+          dispatch(setCredentials({ user: res.user }));
+        }
+      } catch (err) {
+        dispatch(setLoading(false));
+      }
+    };
+    checkAuth();
+  }, [dispatch]);
 
-      // Exchange Google token for your Backend JWT + Cookie
-      // NOTE: Ensure the key 'token' matches your backend req.body.token
-      const backendUser = await LoginApi({ token: credential });
-
-      // This updates state AND localStorage (via UserProvider)
-      setUser(backendUser.user);
-
-    } catch (error) {
-      console.error("Login process failed:", error);
-      alert("Failed to authenticate with backend.");
-    }
-  };
-  
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <div className="h-screen w-screen bg-[#1e1e1e] text-white overflow-hidden flex items-center justify-center">
-        {!user ? (
-          <div className="h-1/2 w-1/2 bg-[#252526] flex flex-col items-center justify-center border border-[#333] rounded-2xl gap-6 shadow-2xl">
-            <h1 className="text-4xl font-bold tracking-tight text-blue-400">Cloud IDE</h1>
-            <p className="text-gray-400 text-sm">Sign in to launch your workspace</p>
-            <GoogleLogin
-              onSuccess={onSuccess}
-              onError={() => console.log("Login Failed")}
-              theme="filled_black"
-              shape="pill"
-            />
-          </div>
-        ) : (
-          <IDEWorkspace />
-        )}
-      </div>
-    </GoogleOAuthProvider>
+    <Router>
+      <Routes>
+        <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/workspace"
+          element={
+            <ProtectedRoute>
+              <IDEWorkspace />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/workspace" replace />} />
+      </Routes>
+    </Router>
   );
 }
 

@@ -13,10 +13,16 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
+# Load VOLUME_BASE_PATH if available, or fallback to user home ide-projects
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+TARGET_VOL_PATH="${VOLUME_BASE_PATH:-/home/sanampreetsingh/ide-projects}"
+
 # Ensure the workspace volume directory exists and has permissions
-mkdir -p /home/sanampreet/ide-projects
-# 777 ensures the Node container and Workspace container can both read/write to it
-chmod 777 /home/sanampreet/ide-projects
+mkdir -p "$TARGET_VOL_PATH" 2>/dev/null || true
+chmod 777 "$TARGET_VOL_PATH" 2>/dev/null || true
 
 
 # 1. Build the Blueprint Image
@@ -24,9 +30,9 @@ chmod 777 /home/sanampreet/ide-projects
 echo "🛠️  Step 1: Building the Master Workspace Image (ide-workspace)..."
 docker build -t ide-workspace:latest ./workspace
 
-# 2. Build the Infrastructure
-# This builds the Gateway (Nginx), Backend (Manager), and Frontend (UI)
-echo "📦 Step 2: Building Infrastructure Services..."
+# 2. Build Frontend Assets & Infrastructure Services
+echo "📦 Step 2: Building Frontend Bundle and Infrastructure Services..."
+(cd frontend && npm run build)
 docker compose build
 
 # 3. Clean up dangling images to save space
@@ -34,8 +40,8 @@ echo "🧹 Step 3: Cleaning up build artifacts..."
 docker image prune -f
 
 echo "-------------------------------------------------------"
-echo "🌐 Step 4: Launching the IDE..."
-docker compose up -d
+echo "🌐 Step 4: Launching the IDE with force recreation..."
+docker compose up -d --force-recreate
 
 echo "-------------------------------------------------------"
 echo "🎉 SUCCESS!"

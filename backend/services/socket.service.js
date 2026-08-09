@@ -79,8 +79,8 @@ async function connectDirectPTY(clientWs, containerId, userId) {
         const stream = await exec.start({ stdin: true, hijack: true });
         execRef = exec;
 
-        // Clean start
-        stream.write("stty sane && shopt -s checkwinsize && clear\n");
+        // Clean start & ensure codeuser volume ownership
+        stream.write("sudo chown -R codeuser:codeuser /home/codeuser/workspace 2>/dev/null || sudo chmod -R 777 /home/codeuser/workspace 2>/dev/null; stty sane && shopt -s checkwinsize && clear\n");
 
         stream.on("data", (chunk) => {
             // Pass the current state.isResizing to the stream handler

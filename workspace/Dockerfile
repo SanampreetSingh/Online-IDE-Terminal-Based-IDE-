@@ -60,6 +60,8 @@ RUN echo 'echo -e "\\n\\e[1;36m┌───────────────�
     echo 'echo -e "\\e[1;36m│\\e[0m  \\e[1;32m🚀 Welcome to your Cloud IDE Workspace!\\e[0m                 \\e[1;36m│\\e[0m"' >> ~/.bashrc && \
     echo 'echo -e "\\e[1;36m│\\e[0m  To preview a web app, run \\e[1;33mserve-link <port>\\e[0m              \\e[1;36m│\\e[0m"' >> ~/.bashrc && \
     echo 'echo -e "\\e[1;36m└──────────────────────────────────────────────────────────┘\\e[0m\\n"' >> ~/.bashrc && \
+    # FIX: Ensure workspace directory permissions are owned by codeuser
+    echo "sudo chown -R codeuser:codeuser /home/codeuser/workspace 2>/dev/null || sudo chmod -R 777 /home/codeuser/workspace 2>/dev/null" >> ~/.bashrc && \
     # FIX: Override npm run dev to force 0.0.0.0 host binding
     echo 'npm() { if [ "$1" = "run" ] && [ "$2" = "dev" ]; then command npm run dev -- --host 0.0.0.0 "${@:3}"; else command npm "$@"; fi; }' >> ~/.bashrc && \
     # FIX: Force bash window resize check for xterm.js responsiveness

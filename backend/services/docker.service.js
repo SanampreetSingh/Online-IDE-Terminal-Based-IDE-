@@ -44,11 +44,14 @@ exports.spawnContainer = async (userId) => {
         }
     }
 
-  // 2. VOLUME SETUP
+    // 2. VOLUME SETUP
     const volumePath = path.join(env.volumeBasePath, userId.toString());
     if (!fs.existsSync(volumePath)) {
         fs.mkdirSync(volumePath, { recursive: true });
     }
+    try {
+        fs.chmodSync(volumePath, 0o777);
+    } catch (e) {}
 
     // CREATE CONTAINER (No Port Mapping Needed)
 try {

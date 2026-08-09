@@ -4,6 +4,7 @@ const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 const Map = require("../models/map.model");
 const path = require("path");
 const fs = require("fs");
+const env = require("../config/env.config");
 
 /**
  * Handles spawning a new workspace container or syncing an existing one.
@@ -44,7 +45,7 @@ exports.spawnContainer = async (userId) => {
     }
 
   // 2. VOLUME SETUP
-    const volumePath = path.join(process.env.VOLUME_BASE_PATH || "/home/volumes", userId.toString());
+    const volumePath = path.join(env.volumeBasePath, userId.toString());
     if (!fs.existsSync(volumePath)) {
         fs.mkdirSync(volumePath, { recursive: true });
     }

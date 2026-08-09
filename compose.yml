@@ -4,14 +4,14 @@ services:
     image: nginx:alpine
     container_name: ide-gateway
     ports:
-      - "80:80"
+      - "${HTTP_PORT}:${HTTP_PORT}"
     volumes:
       # Compiles the template with .env variables
       - ./infra/nginx.conf:/etc/nginx/templates/nginx.conf.template:ro
       # Mounts the static compiled frontend files directly from host dist
       - ./frontend/dist:/usr/share/nginx/html:ro
     environment:
-      - HTTP_PORT=80
+      - HTTP_PORT=${HTTP_PORT}
       - DOMAIN_NAME=${DOMAIN_NAME}
       - BACKEND_PORT=${BACKEND_PORT}
       - DOCKER_RESOLVER=${DOCKER_RESOLVER}

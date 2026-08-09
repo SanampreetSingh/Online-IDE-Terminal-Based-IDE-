@@ -80,20 +80,30 @@ Create or update `.env` in the root directory with the following variables:
 # Infrastructure Ports
 HTTP_PORT=80
 BACKEND_PORT=5000
-DOMAIN_NAME=localhost
 DOCKER_RESOLVER=127.0.0.11
 
-# Security & Storage
+# Domain & Networking
+DOMAIN_NAME=localhost
+CLIENT_MAX_BODY_SIZE=50M
+WORKER_CONNECTIONS=1024
+
+# Security & Database
 JWT_SECRET=your_super_secret_jwt_key
 MONGO_URI=mongodb://localhost:27017/cloud_ide
+
+# Persistent User Workspaces
 VOLUME_BASE_PATH=/home/sanampreetsingh/ide-projects
 
-# Nodemailer Email Verification
+# Email Dispatcher (Nodemailer OTP)
 MAIL_USERNAME=your_email@gmail.com
 MAIL_PASSWORD=your_app_password
 
-# Google OAuth
-VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+# Google OAuth (Single Client ID definition used by both Backend and Frontend)
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+
+# Frontend Gateway URL
+VITE_GATEWAY_URL=http://localhost
 ```
 
 ---

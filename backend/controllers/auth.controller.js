@@ -28,13 +28,34 @@ const googleAuth = async (req, res) => {
         const payload = ticket.getPayload();
         const { email, name, picture, sub: googleId } = payload;
 
-        let user = await User.findOne({ googleId });
+        const normalizedEmail = email ? email.toLowerCase().trim() : '';
+        if (!normalizedEmail) {
+            return res.status(400).json({ error: "Google account does not have an email associated" });
+        }
+
+        // Find user by email only so accounts created via email/password or Google are unified
+        let user = await User.findOne({ email: normalizedEmail });
 
         if (!user) {
-            user = await User.create({ name, email, googleId, picture });
-        } else if (user.email !== email) {
-            user.email = email;
-            await user.save();
+            user = await User.create({
+                name: name || 'Google User',
+                email: normalizedEmail,
+                googleId,
+                picture
+            });
+        } else {
+            let isModified = false;
+            if (!user.googleId) {
+                user.googleId = googleId;
+                isModified = true;
+            }
+            if (!user.picture && picture) {
+                user.picture = picture;
+                isModified = true;
+            }
+            if (isModified) {
+                await user.save();
+            }
         }
 
         const backendToken = jwt.sign(

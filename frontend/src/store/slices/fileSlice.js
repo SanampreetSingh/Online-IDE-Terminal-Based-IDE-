@@ -4,6 +4,7 @@ const initialState = {
   tree: [],
   openTabs: [],
   activeTabPath: null,
+  selectedPath: null,
   loading: false,
 };
 
@@ -13,6 +14,9 @@ const fileSlice = createSlice({
   reducers: {
     setFileTree: (state, action) => {
       state.tree = action.payload;
+    },
+    setSelectedPath: (state, action) => {
+      state.selectedPath = action.payload;
     },
     openTab: (state, action) => {
       const { path, name, content } = action.payload;
@@ -33,6 +37,43 @@ const fileSlice = createSlice({
       state.openTabs = state.openTabs.filter(tab => tab.path !== path);
       if (state.activeTabPath === path) {
         state.activeTabPath = state.openTabs.length > 0 ? state.openTabs[state.openTabs.length - 1].path : null;
+      }
+    },
+    closeTabsUnderPath: (state, action) => {
+      const targetPath = action.payload;
+      state.openTabs = state.openTabs.filter(
+        (tab) => tab.path !== targetPath && !tab.path.startsWith(targetPath + '/')
+      );
+      if (state.activeTabPath === targetPath || state.activeTabPath?.startsWith(targetPath + '/')) {
+        state.activeTabPath = state.openTabs.length > 0 ? state.openTabs[state.openTabs.length - 1].path : null;
+      }
+      if (state.selectedPath === targetPath || state.selectedPath?.startsWith(targetPath + '/')) {
+        state.selectedPath = null;
+      }
+    },
+    renameTabsUnderPath: (state, action) => {
+      const { oldPath, newPath } = action.payload;
+      state.openTabs = state.openTabs.map((tab) => {
+        if (tab.path === oldPath) {
+          const name = newPath.includes('/') ? newPath.split('/').pop() : newPath;
+          return { ...tab, path: newPath, name };
+        }
+        if (tab.path.startsWith(oldPath + '/')) {
+          const updatedPath = newPath + tab.path.substring(oldPath.length);
+          const name = updatedPath.includes('/') ? updatedPath.split('/').pop() : updatedPath;
+          return { ...tab, path: updatedPath, name };
+        }
+        return tab;
+      });
+      if (state.activeTabPath === oldPath) {
+        state.activeTabPath = newPath;
+      } else if (state.activeTabPath?.startsWith(oldPath + '/')) {
+        state.activeTabPath = newPath + state.activeTabPath.substring(oldPath.length);
+      }
+      if (state.selectedPath === oldPath) {
+        state.selectedPath = newPath;
+      } else if (state.selectedPath?.startsWith(oldPath + '/')) {
+        state.selectedPath = newPath + state.selectedPath.substring(oldPath.length);
       }
     },
     setActiveTab: (state, action) => {
@@ -57,5 +98,15 @@ const fileSlice = createSlice({
   },
 });
 
-export const { setFileTree, openTab, closeTab, setActiveTab, updateTabContent, markTabSaved } = fileSlice.actions;
+export const {
+  setFileTree,
+  setSelectedPath,
+  openTab,
+  closeTab,
+  closeTabsUnderPath,
+  renameTabsUnderPath,
+  setActiveTab,
+  updateTabContent,
+  markTabSaved,
+} = fileSlice.actions;
 export default fileSlice.reducer;

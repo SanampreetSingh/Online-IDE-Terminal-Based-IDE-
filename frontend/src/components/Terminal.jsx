@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { logout as logoutAction } from '../store/slices/authSlice';
-import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff, Trash2, StopCircle, CornerDownLeft } from 'lucide-react';
 import 'xterm/css/xterm.css';
 
 const TerminalComponent = () => {
@@ -20,7 +20,10 @@ const TerminalComponent = () => {
 
   const connectSocket = useCallback(() => {
     if (!terminalRef.current) return;
-    if (wsRef.current && (wsRef.current.readyState === WebSocket.CONNECTING || wsRef.current.readyState === WebSocket.OPEN)) {
+    if (
+      wsRef.current &&
+      (wsRef.current.readyState === WebSocket.CONNECTING || wsRef.current.readyState === WebSocket.OPEN)
+    ) {
       return;
     }
 
@@ -33,12 +36,30 @@ const TerminalComponent = () => {
         convertEol: true,
         scrollback: 5000,
         fontSize: 13,
-        fontFamily: '"Fira Code", "Cascadia Code", monospace',
+        fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
         allowProposedApi: true,
         theme: {
-          background: '#000000',
-          foreground: '#ffffff',
-          cursor: '#38bdf8',
+          background: '#090d16',
+          foreground: '#e2e8f0',
+          cursor: '#22d3ee',
+          cursorAccent: '#020617',
+          selectionBackground: '#1e293b',
+          black: '#0f172a',
+          red: '#f87171',
+          green: '#4ade80',
+          yellow: '#facc15',
+          blue: '#38bdf8',
+          magenta: '#c084fc',
+          cyan: '#22d3ee',
+          white: '#f1f5f9',
+          brightBlack: '#475569',
+          brightRed: '#ef4444',
+          brightGreen: '#22c55e',
+          brightYellow: '#eab308',
+          brightBlue: '#0ea5e9',
+          brightMagenta: '#a855f7',
+          brightCyan: '#06b6d4',
+          brightWhite: '#ffffff',
         },
       });
 
@@ -60,21 +81,25 @@ const TerminalComponent = () => {
 
     const syncSize = () => {
       if (socket.readyState === WebSocket.OPEN && fitAddon && term) {
-        fitAddon.fit();
-        socket.send(
-          JSON.stringify({
-            type: 'resize',
-            cols: term.cols,
-            rows: term.rows,
-          })
-        );
+        try {
+          fitAddon.fit();
+          socket.send(
+            JSON.stringify({
+              type: 'resize',
+              cols: term.cols,
+              rows: term.rows,
+            })
+          );
+        } catch (e) {
+          console.warn('Resize sync err', e);
+        }
       }
     };
 
     socket.onopen = () => {
       setConnected(true);
       setConnecting(false);
-      term.writeln('\x1b[32m✔ Connected to workspace container shell.\x1b[0m\r\n');
+      term.writeln('\x1b[38;2;34;211;238m✔ Connected to interactive container shell.\x1b[0m\r\n');
       setTimeout(() => {
         syncSize();
         term.focus();
@@ -90,7 +115,7 @@ const TerminalComponent = () => {
         term.writeln('\r\n\x1b[31m❌ Session expired or unauthorized. Logging out...\x1b[0m\r\n');
         dispatch(logoutAction());
       } else {
-        term.writeln('\r\n\x1b[33m⚡ Container process stopped or disconnected. Reconnect when container is active.\x1b[0m\r\n');
+        term.writeln('\r\n\x1b[33m⚡ Container disconnected. Click Reconnect to resume session.\x1b[0m\r\n');
       }
     };
 
@@ -121,6 +146,35 @@ const TerminalComponent = () => {
     resizeObserver.observe(terminalRef.current);
   }, [dispatch]);
 
+  // Handle external program execution events (1-Click Run Code)
+  useEffect(() => {
+    const handleRunCommand = (e) => {
+      const command = e.detail?.command;
+      if (!command) return;
+
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(command + '\n');
+        if (xtermRef.current) {
+          xtermRef.current.focus();
+        }
+      } else {
+        // Reconnect if needed, then send
+        connectSocket();
+        setTimeout(() => {
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(command + '\n');
+            if (xtermRef.current) {
+              xtermRef.current.focus();
+            }
+          }
+        }, 600);
+      }
+    };
+
+    window.addEventListener('ide-run-command', handleRunCommand);
+    return () => window.removeEventListener('ide-run-command', handleRunCommand);
+  }, [connectSocket]);
+
   // Initial connect & auto-reconnect when container status becomes active
   useEffect(() => {
     if (containerStatus === 'active') {
@@ -145,32 +199,72 @@ const TerminalComponent = () => {
     };
   }, []);
 
+  const handleClearTerminal = () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send('clear\n');
+    }
+    if (xtermRef.current) {
+      xtermRef.current.clear();
+      xtermRef.current.focus();
+    }
+  };
+
+  const handleInterruptProcess = () => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      // Send Ctrl+C ANSI code
+      wsRef.current.send('\x03');
+      if (xtermRef.current) {
+        xtermRef.current.focus();
+      }
+    }
+  };
+
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden bg-black">
-      {/* Terminal Reconnect Toolbar Overlay */}
-      <div className="absolute right-4 top-2 z-20 flex items-center gap-2">
-        <div className="flex items-center gap-1.5 rounded-full bg-slate-900/80 px-2.5 py-0.5 text-[10px] text-slate-300 border border-slate-800 backdrop-blur">
+    <div className="relative flex h-full w-full flex-col overflow-hidden bg-[#090d16]">
+      {/* Sleek Terminal Utility Bar */}
+      <div className="absolute right-3 top-2 z-20 flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-lg border border-slate-800 backdrop-blur shadow-md">
+        <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] text-slate-300">
           {connected ? (
             <>
-              <Wifi className="h-3 w-3 text-emerald-400" />
-              <span className="text-emerald-400 font-medium">Online</span>
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-500/50" />
+              <span className="text-emerald-400 font-semibold tracking-wide">ONLINE</span>
             </>
           ) : (
             <>
-              <WifiOff className="h-3 w-3 text-amber-400" />
-              <span className="text-amber-400 font-medium">Disconnected</span>
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
+              <span className="text-amber-400 font-semibold tracking-wide">OFFLINE</span>
             </>
           )}
         </div>
+
+        <div className="h-3 w-px bg-slate-800" />
+
+        <button
+          onClick={handleInterruptProcess}
+          title="Interrupt Running Process (Ctrl+C)"
+          className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] text-slate-400 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+        >
+          <StopCircle className="h-3 w-3 text-red-400" />
+          <span>Stop</span>
+        </button>
+
+        <button
+          onClick={handleClearTerminal}
+          title="Clear Terminal Screen (Ctrl+L)"
+          className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] text-slate-400 hover:bg-slate-800 hover:text-cyan-400 transition-colors"
+        >
+          <Trash2 className="h-3 w-3" />
+          <span>Clear</span>
+        </button>
 
         <button
           onClick={connectSocket}
           disabled={connecting}
           title="Reconnect Terminal WebSocket"
-          className="flex items-center gap-1 rounded bg-slate-800/90 px-2 py-0.5 text-[10px] text-slate-300 hover:bg-slate-700 hover:text-cyan-400 border border-slate-700 disabled:opacity-40"
+          className="flex items-center gap-1 rounded px-2 py-0.5 text-[10px] text-slate-400 hover:bg-slate-800 hover:text-cyan-400 transition-colors disabled:opacity-40"
         >
           <RefreshCw className={`h-3 w-3 ${connecting ? 'animate-spin text-cyan-400' : ''}`} />
-          {connecting ? 'Connecting...' : 'Reconnect'}
+          <span>{connecting ? 'Connecting...' : 'Reconnect'}</span>
         </button>
       </div>
 

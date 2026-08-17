@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Email is required'],
     unique: true,
-    index: true,
+    index: true, // Explicit B-tree index for high-speed lookups
     lowercase: true,
     trim: true,
     match: [/^\S+@\S+\.\S+$/, 'Invalid email format'],
@@ -29,9 +29,7 @@ const userSchema = new mongoose.Schema({
   },
   googleId: {
     type: String,
-    unique: true,
     sparse: true, 
-    index: true, 
   },
   picture: {
     type: String,
@@ -39,10 +37,5 @@ const userSchema = new mongoose.Schema({
 }, { 
   timestamps: true 
 });
-
-// Single field indexes for high-speed queries by _id, email, and googleId
-userSchema.index({ _id: 1 });
-userSchema.index({ email: 1 });
-userSchema.index({ googleId: 1 });
 
 module.exports = mongoose.model('User', userSchema);

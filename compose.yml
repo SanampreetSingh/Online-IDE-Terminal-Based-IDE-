@@ -31,6 +31,9 @@ services:
       dockerfile: Dockerfile
     container_name: backend  
     user: root # Required to interface with docker.sock
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${VOLUME_BASE_PATH}:${VOLUME_BASE_PATH}

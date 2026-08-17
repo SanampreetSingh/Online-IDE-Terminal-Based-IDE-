@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Editor from '@monaco-editor/react';
-import { updateTabContent, markTabSaved, openTab, setFileTree, setSelectedPath } from '../../store/slices/fileSlice';
+import { updateTabContent, markTabSaved, openTab, openPreviewTab, setFileTree, setSelectedPath } from '../../store/slices/fileSlice';
 import { writeFile, createEntry, getFileTree } from '../../api/fileApi';
 import { getLanguageMeta, executeActiveCode } from '../../utils/codeRunner';
+import LivePreviewView from '../preview/LivePreviewView';
 import { toast } from 'sonner';
 import {
   Code2,
@@ -13,7 +14,8 @@ import {
   Sparkles,
   Terminal as TerminalIcon,
   ChevronRight,
-  Folder
+  Folder,
+  Globe
 } from 'lucide-react';
 
 const detectLanguage = (filename) => {
@@ -310,8 +312,14 @@ const MonacoEditorContainer = ({ setTerminalHeight }) => {
     );
   }
 
+  // If active tab is a Live Preview tab, render LivePreviewView component
+  if (activeTab.type === 'preview' || activeTab.path.startsWith('__preview__')) {
+    return <LivePreviewView activeTab={activeTab} />;
+  }
+
   // Parse path breadcrumbs
   const pathParts = activeTab.path.split('/');
+  const isHtml = activeTab.name.endsWith('.html') || activeTab.name.endsWith('.htm');
 
   return (
     <div className="relative flex h-full w-full flex-col bg-[#090d16]">
@@ -333,6 +341,18 @@ const MonacoEditorContainer = ({ setTerminalHeight }) => {
 
         {/* Right Action Tools */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Quick Preview Button for HTML files */}
+          {isHtml && (
+            <button
+              onClick={() => dispatch(openPreviewTab({ port: '3000' }))}
+              title="Open Live Preview Tab"
+              className="flex items-center gap-1 rounded bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 text-[11px] text-cyan-400 hover:bg-cyan-500/20 transition-colors"
+            >
+              <Globe className="h-3 w-3" />
+              <span>Preview</span>
+            </button>
+          )}
+
           {/* Language Pill */}
           <div className={`flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-mono border ${langMeta.badgeColor}`}>
             <span>{langMeta.name}</span>

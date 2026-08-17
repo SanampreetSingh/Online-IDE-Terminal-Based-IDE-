@@ -47,7 +47,8 @@ export const getRunCommand = (filePath) => {
       return `clear && echo -e "\\033[1;32m🚀 Running Shell Script ${fileName}:\\033[0m" && bash ${safeFile}`;
 
     case 'html':
-      return `clear && echo -e "\\033[1;36m🌐 Serving HTML on port 3000...\\033[0m" && serve-link 3000`;
+    case 'htm':
+      return `clear && echo -e "\\033[1;36m🌐 Starting Web Server for ${fileName} on port 3000...\\033[0m" && (pkill -f "http.server 3000" 2>/dev/null || true) && python3 -m http.server 3000 --bind 0.0.0.0`;
 
     case 'go':
       return `clear && echo -e "\\033[1;32m🚀 Running ${fileName} (Go):\\033[0m" && go run ${safeFile}`;
@@ -242,5 +243,10 @@ export const executeActiveCode = async (activeTab, dispatch, setTerminalHeight) 
 
   // 4. Send command to terminal
   sendTerminalCommand(runCmd);
-  toast.success(`⚡ Running ${activeTab.name}...`);
+  const isHtml = activeTab.name.endsWith('.html') || activeTab.name.endsWith('.htm');
+  if (isHtml) {
+    toast.success(`🌐 Static server running on port 3000! Open Preview to view ${activeTab.name}.`);
+  } else {
+    toast.success(`⚡ Running ${activeTab.name}...`);
+  }
 };

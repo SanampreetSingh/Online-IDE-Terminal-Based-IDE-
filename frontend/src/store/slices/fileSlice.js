@@ -25,12 +25,33 @@ const fileSlice = createSlice({
         state.openTabs.push({
           path,
           name,
+          type: 'file',
           content,
           originalContent: content,
           isDirty: false
         });
       }
       state.activeTabPath = path;
+    },
+    openPreviewTab: (state, action) => {
+      const port = (action.payload?.port || '3000').toString().trim().replace(/[^0-9]/g, '') || '3000';
+      const subpath = action.payload?.path || '';
+      const cleanPath = subpath ? (subpath.startsWith('/') ? subpath : `/${subpath}`) : '';
+      const tabPath = `__preview__:${port}${cleanPath}`;
+      const tabName = `Preview (:${port}${cleanPath ? cleanPath : ''})`;
+
+      const existing = state.openTabs.find((tab) => tab.path === tabPath);
+      if (!existing) {
+        state.openTabs.push({
+          path: tabPath,
+          name: tabName,
+          type: 'preview',
+          port,
+          subpath: cleanPath,
+          isDirty: false,
+        });
+      }
+      state.activeTabPath = tabPath;
     },
     closeTab: (state, action) => {
       const path = action.payload;
@@ -102,6 +123,7 @@ export const {
   setFileTree,
   setSelectedPath,
   openTab,
+  openPreviewTab,
   closeTab,
   closeTabsUnderPath,
   renameTabsUnderPath,

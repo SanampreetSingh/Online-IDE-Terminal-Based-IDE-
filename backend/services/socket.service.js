@@ -79,8 +79,11 @@ async function connectDirectPTY(clientWs, containerId, userId) {
         const stream = await exec.start({ stdin: true, hijack: true });
         execRef = exec;
 
-        // Clean start & ensure codeuser volume ownership
-        stream.write("sudo chown -R codeuser:codeuser /home/codeuser/workspace 2>/dev/null || sudo chmod -R 777 /home/codeuser/workspace 2>/dev/null; stty sane && shopt -s checkwinsize && clear\n");
+        // Ensure workspace ownership via root exec in the background without polluting the interactive terminal buffer
+        container.exec({
+            Cmd: ["/bin/sh", "-c", "chown -R codeuser:codeuser /home/codeuser/workspace 2>/dev/null || chmod -R 777 /home/codeuser/workspace 2>/dev/null"],
+            User: "root"
+        }).then(pExec => pExec.start({})).catch((err) => console.warn("Workspace chown warning:", err.message));
 
         stream.on("data", (chunk) => {
             // Pass the current state.isResizing to the stream handler

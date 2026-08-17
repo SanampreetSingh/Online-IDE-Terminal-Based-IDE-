@@ -6,9 +6,9 @@ import TerminalComponent from './Terminal';
 import FileExplorer from './sidebar/FileExplorer';
 import TabBar from './editor/TabBar';
 import MonacoEditorContainer from './editor/MonacoEditorContainer';
-import LivePreviewBar from './preview/LivePreviewBar';
 import { getWorkspaceStatus } from '../api/workspaceApi';
 import { setWorkspaceStatus } from '../store/slices/workspaceSlice';
+import { openPreviewTab } from '../store/slices/fileSlice';
 import { getLanguageMeta, executeActiveCode } from '../utils/codeRunner';
 import {
   LogOut,
@@ -218,17 +218,13 @@ const IDEWorkspace = () => {
             {showSidebar ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
           </button>
 
-          {/* Toggle Live Web Preview */}
+          {/* Open Live Web Preview Tab Button */}
           <button
-            onClick={() => setShowPreview((prev) => !prev)}
-            title="Toggle Live Web Preview Drawer"
-            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
-              showPreview
-                ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 shadow-sm shadow-cyan-950'
-                : 'border-slate-800 bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-            }`}
+            onClick={() => dispatch(openPreviewTab({ port: '3000' }))}
+            title="Open Live Web Preview Tab (:3000)"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-xs font-medium text-slate-400 hover:border-cyan-500/40 hover:bg-slate-800 hover:text-cyan-400 transition-all"
           >
-            <Globe size={13} className={showPreview ? 'text-cyan-400' : ''} />
+            <Globe size={13} className="text-cyan-400" />
             <span className="hidden sm:inline">Preview</span>
           </button>
 
@@ -278,15 +274,12 @@ const IDEWorkspace = () => {
         {/* Left File Explorer Sidebar (collapsible) */}
         {showSidebar && <FileExplorer />}
 
-        {/* Center Code Editor & Live Preview Panel */}
+        {/* Center Code Editor & Tab Panel */}
         <div className="flex flex-1 flex-col overflow-hidden bg-[#090d16]">
-          {/* Live Web Preview Drawer (Collapsible) */}
-          <LivePreviewBar showPreview={showPreview} setShowPreview={setShowPreview} />
-
           {/* Editor Tab Bar */}
           <TabBar />
 
-          {/* Monaco Editor Container */}
+          {/* Monaco Editor Container / Preview Tab View */}
           <div className="relative flex-1 overflow-hidden">
             <MonacoEditorContainer setTerminalHeight={setTerminalHeight} />
             {isResizing && <div className="absolute inset-0 z-50 bg-transparent" />}
